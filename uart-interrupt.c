@@ -108,6 +108,26 @@ char uart_receive(void){
     return data;
     }
 
+char* uart_receiveStr(){
+            buf[20] = '\0';
+            idx = 0;
+
+            while(buf[idx] != '\0'){
+                buf[idx++] = ' ';
+            }
+
+            idx = 0;
+
+            do {
+               buf[idx] = uart_receive();
+
+            } while((buf[idx] != '\n') && idx++ < 19);
+
+            //idx--;
+            buf[idx] = '\0';
+            return buf;
+}
+
 void uart_sendStr(const char *data){
     //TODO for reference see lcd_puts from lcd.c file
     do{
@@ -117,10 +137,12 @@ void uart_sendStr(const char *data){
     } while( *(data++) != '\0');
 }
 
+unsigned int** map;
+
 // Interrupt handler for receive interrupts
 void UART1_Handler(void)
 {
-    char byte_received;
+    char* byte_received;
     //check if handler called due to RX event
     if (UART1_MIS_R & 0x10)
     {
@@ -130,14 +152,54 @@ void UART1_Handler(void)
 
         //read the byte received from UART1_DR_R and echo it back to PuTTY
         //ignore the error bits in UART1_DR_R
-        byte_received = uart_receive();
-        uart_sendChar(byte_received);
+        byte_received = uart_receiveStr();
+
+        if (strstr(byte_received, "go ") == 0){
+
+            char* coord = strtok(byte_received[2], ',');
+            int x = atoi(coord[0]);
+            int y = atoi(coord[1]);
+        }
 
         //if byte received is a carriage return
-        if (byte_received == '\r')
+        if (strcmp(byte_received, "getMap") == 0)
         {
             //send a newline character back to PuTTY
             uart_sendChar('\n');
+            map = getMap();
+            int i = 0;
+            for( i = 0; i < mapSideLength; i++){
+                map[i] = malloc(mapSideLength * sizeof(unsigned int));
+                int j = 0;
+                for(j = 0; j < mapSideLength; j++){
+                    char sendChar;
+                    swtich(map[i][j]){
+                        case UNDISCOVERED:
+                            uart_sendChar('?');
+                            break;
+                        case EMPTY:
+                            uart_sendChar('-');
+                            break;
+                        case TALL_OBJ:
+                            uart_sendChar('O');
+                            break;
+                        case SHORT_OBJ:
+                            uart_sendChar('o');
+                            break;
+                        case PIT:
+                            uart_sendChar('|');
+                            break;
+                        case ROOM:
+                            uart_sendChar('*');
+                            break;
+                        case ROBOT:
+                            uart_sendChar('R');
+                            break;
+                    }
+                }
+                uart_sendChar('\r');
+                uart_sendChar('\n');
+            }
         }
         else
         {
