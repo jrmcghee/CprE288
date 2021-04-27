@@ -5,6 +5,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
+#include "movement.h"
+#include "open_interface.h"
+
+#define RESOLUTION 8
+#define FIELD_SIZE 440
+#define MAP_SIDE_LENGTH (FIELD_SIZE / RESOLUTION)
 
 typedef struct coordinate {
     int x;
@@ -26,7 +33,10 @@ typedef enum ROOMCORNER {
     TOP_LEFT,
     BOTTOM_RIGHT,
     BOTTOM_LEFT
-}
+} ROOMCORNER;
+
+volatile char* map;
+
 
 // Initialize map
 void initializeMap();
@@ -35,16 +45,23 @@ void initializeMap();
 void putAtPosition(coordinate pos, OBSTACLE obj);
 
 // Scan and put nearby object into map
-void scanNearby( coordinate pos );
+void scanNearbyCoords( coordinate pos, int radius, oi_t* io );
+
+// Scan and put nearby object into map
+void scanNearby( int x, int y, int radius, oi_t* io );
 
 //Return running map of objects
 int** getMap();
 
 // Set pre-defined map
-void setMap(int** map);
+void setMap( int preSetMap[][] );
 
 // Return list of found rooms, return position of the center of the room
 coordinate* findRooms();
+
+int cmToIndex(int num);
+
+int getMapSideLength();
 
 
 

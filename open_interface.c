@@ -1,11 +1,19 @@
 /*
  * open_interface.c
  *
- *  Created on: Apr 15, 2021
- *      Author: Lamarque
+ *  Created on: Mar 11, 2016
+ *      Author: nbergman
+ *  Updated on: Aug 22, 2019
+ *		Author: Isaac Rex
  */
 
 
+/*
+ * Open Interface
+ *
+ *  Created on: Mar 3, 2016
+ *      Author: Noah Bergman, Eric Middleton, dmlarson
+ */
 
 #include "open_interface.h"
 
@@ -81,30 +89,30 @@ float motor_cal_factor_R = 1.00;
 /// internal function
 void oi_init_noupdate(void);
 
-/// \brief Initialize UART4 for OI Communication and Debugging
-/// internal function
+///	\brief Initialize UART4 for OI Communication and Debugging
+///	internal function
 void oi_uartInit(void);
 
 /// Set baud to 115200
 void oi_uartFastMode(void);
 
 /// transmit character
-/// internal function
+///	internal function
 void oi_uartSendChar(char data);
 
 /// transmit character array
-/// internal function
+///	internal function
 void uart_sendStr(const char *theData);
 
 /// Receive from UART
-/// internal function
+///	internal function
 char oi_uartReceive(void);
 
 /// Parse data from iRobot into oi_t struct
 void oi_parsePacket(oi_t *self, uint8_t packet[]);
 
 /// Send large data set from array
-/// internal function
+///	internal function
 void oi_uartSendBuff(const uint8_t theData[], uint8_t theSize);
 
 /// Helper function to convert big-endian integer from pointer into little
@@ -115,7 +123,7 @@ int16_t oi_parseInt(uint8_t *theInt);
 /// Allocate and clear all memory for OI Struct
 oi_t *oi_alloc()
 {
-    return calloc(1, sizeof(oi_t));
+	return calloc(1, sizeof(oi_t));
 }
 
 
@@ -286,6 +294,26 @@ inline int16_t oi_parseInt(uint8_t *theInt)
     return (theInt[0] << 8) | theInt[1];
 }
 
+/// \brief Set the LEDS on the Create
+/// \param play_led 0=off, 1=on
+/// \param advance_led 0=off, 1=on
+/// \param power_color (0-255), 0=green, 255=red
+/// \param power_intensity (0-255) 0=off, 255=full intensity
+void oi_setLeds(uint8_t play_led, uint8_t advance_led, uint8_t power_color, uint8_t power_intensity)
+{
+    // LED Opcode
+    oi_uartSendChar(OI_OPCODE_LEDS);
+
+    // Set the Play and Advance LEDs
+    oi_uartSendChar(advance_led << 3 && play_led << 2);
+
+    // Set the power led color
+    oi_uartSendChar(power_color);
+
+    // Set the power led intensity
+    oi_uartSendChar(power_intensity);
+}
+
 /// \brief Set direction and speed of the robot's wheels
 /// \param linear velocity in mm/s values range from -500 -> 500 of right wheel
 /// \param linear velocity in mm/s values range from -500 -> 500 of left wheel
@@ -300,11 +328,34 @@ void oi_setWheels(int16_t right_wheel, int16_t left_wheel)
     oi_uartSendChar(left_wheel & 0xff);
 }
 
+/// \brief Load song sequence
+/// \param An integer value from 0 - 15 that acts as a label for note sequence
+/// \param An integer value from 1 - 16 indicating the number of notes in the
+/// sequence \param A pointer to a sequence of notes stored as integer values
+/// \param A pointer to a sequence of durations that correspond to the notes
+void oi_loadSong(int song_index, int num_notes, unsigned char *notes, unsigned char *duration)
+{
+    int i;
+    oi_uartSendChar(OI_OPCODE_SONG);
+    oi_uartSendChar(song_index);
+    oi_uartSendChar(num_notes);
+    for (i = 0; i < num_notes; i++) {
+        oi_uartSendChar(notes[i]);
+        oi_uartSendChar(duration[i]);
+    }
+}
+
+/// Plays a given song; use oi_load_song(...) first
+void oi_play_song(int index) {
+    oi_uartSendChar(OI_OPCODE_PLAY);
+    oi_uartSendChar(index);
+}
+
 /// Runs default go charge program; robot will search for dock
 void go_charge(void) {
     char charging_state = 0;
 
-    /*  //Calling demo that will cause Create to seek out home base
+    /*	//Calling demo that will cause Create to seek out home base
    oi_uartSendChar(OI_OPCODE_MAX);
    oi_uartSendChar(0x01);
 
@@ -318,8 +369,8 @@ void go_charge(void) {
    */
 }
 
-/// \brief Initialize UART4 for OI Communication and Debugging
-/// internal function
+///	\brief Initialize UART4 for OI Communication and Debugging
+///	internal function
 void oi_uartInit(void)
 {
     // Calculated Baudrate for 115200;
@@ -351,7 +402,7 @@ void oi_uartInit(void)
 }
 
 /// transmit character
-/// internal function
+///	internal function
 void oi_uartSendChar(char data)
 {
     while ((UART4_FR_R & UART_FR_TXFF) != 0); // holds until no data in transmit buffer
@@ -574,3 +625,4 @@ double oi_getMotorCalibrationLeft(void) { return motor_cal_factor_L; }
  * @return double right motor calibration factor
  */
 double oi_getMotorCalibrationRight(void) { return motor_cal_factor_R; }
+

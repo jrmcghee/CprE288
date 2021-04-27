@@ -7,6 +7,7 @@
 #include "open_interface.h"
 #include "movement.h"
 #include "collision_detection.h"
+#include "Mapping.h"
 
 double move_forward(oi_t *sensor_data, double distance_mm)
 {

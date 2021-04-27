@@ -8,13 +8,14 @@
 *   @date
 */
 
-// The "???" placeholders should be the same as in your uart.c file.
-// The "?????" placeholders are new in this file and must be replaced.
 
-#include <inc/tm4c123gh6pm.h>
-#include <stdint.h>
 #include "uart-interrupt.h"
-#include "cyBot_Scan.h"
+
+#define RESOLUTION 4
+#define MARGIN_OF_ERROR 1
+#define ROOM_SIZE 80
+#define FIELD_SIZE 440
+#define MAP_SIDE_LENGTH (FIELD_SIZE / RESOLUTION)
 
 // These variables are declared as examples for your use in the interrupt handler.
 volatile char command_byte = -1; // byte value for special character used as a command
@@ -108,9 +109,9 @@ char uart_receive(void){
     return data;
     }
 
-char* uart_receiveStr(){
+char* uart_receiveStr(char* buf){
             buf[20] = '\0';
-            idx = 0;
+            int idx = 0;
 
             while(buf[idx] != '\0'){
                 buf[idx++] = ' ';
@@ -137,12 +138,56 @@ void uart_sendStr(const char *data){
     } while( *(data++) != '\0');
 }
 
-unsigned int** map;
+void printMap(){
+    //send a newline character back to PuTTY
+    uart_sendChar('\r');
+    uart_sendChar('\n');
+    char** tempMap = &map;
+    int i = 0;
+    for( i = 0; i < MAP_SIDE_LENGTH; i++){
+        //map[i] = malloc(mapSideLength * sizeof(unsigned int));
+        int j = 0;
+        for(j = 0; j < MAP_SIDE_LENGTH / 2; j++){
+            switch(atoi(tempMap[j][i])){
+                //default:
+                    //map[i][j] = UNDISCOVERED;
+                case UNDISCOVERED:
+                    uart_sendChar('?');
+                    break;
+                case EMPTY:
+                    uart_sendChar('-');
+                    break;
+                case TALL_OBJ:
+                    uart_sendChar('O');
+                    break;
+                case SHORT_OBJ:
+                    uart_sendChar('o');
+                    break;
+                case PIT:
+                    uart_sendChar('|');
+                    break;
+                case ROOM:
+                    uart_sendChar('*');
+                    break;
+                case ROBOT:
+                    uart_sendChar('R');
+                    break;
+                default:
+                    uart_sendChar('%');
+                    break;
+            };
+            uart_sendChar(' ');
+        }
+        uart_sendChar('\r');
+        uart_sendChar('\n');
+    }
+}
 
 // Interrupt handler for receive interrupts
 void UART1_Handler(void)
 {
-    char* byte_received;
+    char byte_received[20] = "";
+    byte_received[20] = '\0';
     //check if handler called due to RX event
     if (UART1_MIS_R & 0x10)
     {
@@ -152,70 +197,27 @@ void UART1_Handler(void)
 
         //read the byte received from UART1_DR_R and echo it back to PuTTY
         //ignore the error bits in UART1_DR_R
-        byte_received = uart_receiveStr();
+        uart_receiveStr(byte_received);
 
-        if (strstr(byte_received, "go ") == 0){
+        char* params = strtok(byte_received, " ");
 
-            char* coord = strtok(byte_received[2], ',');
-            int x = atoi(coord[0]);
-            int y = atoi(coord[1]);
+        if (strcmp("getData", params) == 0){
+
+
+
+
+        }
+
+        if (strcmp("go", params) == 0){
+
+            int x = atoi(params = strtok( NULL, " "));
+            int y = atoi(params = strtok(NULL, " "));
         }
 
         //if byte received is a carriage return
-        if (strcmp(byte_received, "getMap") == 0)
+        if (strcmp("getMap", params) == 0)
         {
-            //send a newline character back to PuTTY
-            uart_sendChar('\n');
-            map = getMap();
-            int i = 0;
-            for( i = 0; i < mapSideLength; i++){
-                map[i] = malloc(mapSideLength * sizeof(unsigned int));
-                int j = 0;
-                for(j = 0; j < mapSideLength; j++){
-                    char sendChar;
-                    swtich(map[i][j]){
-                        case UNDISCOVERED:
-                            uart_sendChar('?');
-                            break;
-                        case EMPTY:
-                            uart_sendChar('-');
-                            break;
-                        case TALL_OBJ:
-                            uart_sendChar('O');
-                            break;
-                        case SHORT_OBJ:
-                            uart_sendChar('o');
-                            break;
-                        case PIT:
-                            uart_sendChar('|');
-                            break;
-                        case ROOM:
-                            uart_sendChar('*');
-                            break;
-                        case ROBOT:
-                            uart_sendChar('R');
-                            break;
-                    }
-                }
-                uart_sendChar('\r');
-                uart_sendChar('\n');
-            }
-        }
-        else
-        {
-            //AS NEEDED
-            //code to handle any other special characters
-            //code to update global shared variables
-            //DO NOT PUT TIME-CONSUMING CODE IN AN ISR
-
-            if (byte_received == 'g')
-            {
-              command_flag = 1;
-            }
-            if (byte_received == 's')
-            {
-              command_flag = 0;
-            }
+            printMap();
         }
     }
 }
