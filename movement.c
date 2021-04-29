@@ -39,6 +39,7 @@ double move_forward(oi_t *sensor_data, double distance_mm)
             break;
         }
         toMove = toMove + sensor_data->distance; //calculate how far it has moved
+        moveRobotOnMap(toMove);
     }
 
     oi_setWheels(0, 0); //stop moving
@@ -62,6 +63,7 @@ double move_backward(oi_t *sensor_data, double distance_mm)
 }
 void turn_right(oi_t *sensor_data, double degrees)
 {
+    changeRobotDirection(degrees);
     double turn = 0; //
     oi_update(sensor_data);
     while (turn < degrees)
@@ -74,6 +76,7 @@ void turn_right(oi_t *sensor_data, double degrees)
 }
 void turn_left(oi_t *sensor_data, double degrees)
 {
+    changeRobotDirection(-degrees);
     double turn = 0;
     oi_update(sensor_data);
     degrees = degrees * -1;

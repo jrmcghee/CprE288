@@ -10,16 +10,17 @@
 
 
 #include "uart-interrupt.h"
-
-#define RESOLUTION 4
-#define MARGIN_OF_ERROR 1
-#define ROOM_SIZE 80
-#define FIELD_SIZE 440
-#define MAP_SIDE_LENGTH (FIELD_SIZE / RESOLUTION)
+#include "globalVariables.h"
 
 // These variables are declared as examples for your use in the interrupt handler.
 volatile char command_byte = -1; // byte value for special character used as a command
 volatile int command_flag = 0; // flag to tell the main program a special command was received
+
+//void setMapUART( char mapAddr[mapSideLength][mapSideLength]){
+//    map = mapAddr;
+//}
+
+int map[MAP_SIDE_LENGTH][MAP_SIDE_LENGTH / 2];
 
 void uart_interrupt_init(void){
     //TODO
@@ -142,13 +143,13 @@ void printMap(){
     //send a newline character back to PuTTY
     uart_sendChar('\r');
     uart_sendChar('\n');
-    char** tempMap = &map;
-    int i = 0;
-    for( i = 0; i < MAP_SIDE_LENGTH; i++){
+    int j = height - 1;
+    for( j = height - 1; j >= 0; j--){
         //map[i] = malloc(mapSideLength * sizeof(unsigned int));
-        int j = 0;
-        for(j = 0; j < MAP_SIDE_LENGTH / 2; j++){
-            switch(atoi(tempMap[j][i])){
+        int i = 0;
+        for(i = 0; i < width; i++){
+            int currentVal = map[i][j];
+            switch(currentVal){
                 //default:
                     //map[i][j] = UNDISCOVERED;
                 case UNDISCOVERED:

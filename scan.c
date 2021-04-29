@@ -234,7 +234,7 @@ void servo_init(){
 
 int servo_move(float degree){
 
-    int calculation = 0xE200 - (90 * (1.6 * degree + 210));
+    int calculation = 0xE200 - (90 * (1.4 * degree + 200));
 
     TIMER1_TBPMR_R = (calculation >> 16) & 0xFF;
 

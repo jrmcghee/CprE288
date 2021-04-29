@@ -4,6 +4,20 @@
  * Template file for CprE 288 Lab 8
  */
 
+#define RESOLUTION 8
+#define MARGIN_OF_ERROR 1
+#define ROOM_SIZE 60
+#define FIELD_SIZE 440
+#define MAP_SIDE_LENGTH (FIELD_SIZE / RESOLUTION)
+#define PI 3.14159265
+
+#include "globalVariables.h"
+
+int mapSideLength = MAP_SIDE_LENGTH;
+
+int width = MAP_SIDE_LENGTH;
+int height = MAP_SIDE_LENGTH / 2;
+
 #include "Mapping.h"
 #include "uart-interrupt.h"
 #include "scan.h"
@@ -11,79 +25,46 @@
 #include "resetSimulation.h"
 #include "Timer.h"
 
-#define PI 3.14159265
-
 // Uncomment or add any include directives that are needed
 
 int main(void) {
 
+//    resetSimulationBoard();
+//
+//    return;
+
+
     uart_interrupt_init();
-    initializeMap();
+    oi_uartInit();
+    initializeMap(map);
     ping_init();
     adc_init();
     servo_init();
     timer_init();
 
+    setField(MAP_SIDE_LENGTH, MARGIN_OF_ERROR, RESOLUTION, ROOM_SIZE, MAP_SIDE_LENGTH, MAP_SIDE_LENGTH / 2);
+
     oi_t *sensor_data = oi_alloc(); // do this only once at start of main()
     oi_init(sensor_data); // do this only once at start of main()
 
-    setUpDefaultMap();
+    setUpDefaultMap(width, height);
 
 
     int degrees = 0;
 
-    coordinate currentPosition;
-    int startingX = -180 + 220;
-    int startingY = 0 + 220;
 
-    currentPosition.x = startingX;
-    currentPosition.y = startingY;
-
-    //resetSimulationBoard();
     while (1)
     {
 
-        oi_setWheels(0,0);
+        scanInFront(sensor_data);
 
-        double servoPosition = 0;
+        coordinate room[10];
 
-        servo_move(servoPosition);
+        findPotentialRooms(width, height, room);
 
-        int i = 0;
+        //shiftMap(RIGHT);
 
-        for( i = 0; i < 180; i += 5){
-
-            servo_move(i);
-
-            double dist = 0;
-            unsigned long raw_dis = adc_read();
-            dist = adc_distance(raw_dis);
-            double angle = (90 - i) * PI / 180.0;
-
-            if( dist < 150){
-                int calculatedX = currentPosition.x + dist * cos(angle);
-                int calculatedY = currentPosition.y + dist * sin(angle);
-
-                coordinate obstaclePos;
-                obstaclePos.x = calculatedX;
-                obstaclePos.y = calculatedY;
-
-                int j = calculatedX;
-
-                for( j = currentPosition.x; j < calculatedX; j++){
-                    coordinate measuringPosition;
-                    measuringPosition.x = j;
-                    measuringPosition.y = currentPosition.y + ((calculatedY - currentPosition.y) / (calculatedX - currentPosition.x)) * j;
-                    putAtPosition(measuringPosition, EMPTY);
-                }
-
-                putAtPosition( obstaclePos, TALL_OBJ);
-                putAtPosition( currentPosition, ROBOT);
-            }
-
-            timer_waitMillis(400);
-            printMap();
-        }
+        int test = 5;
 	}
 
 }

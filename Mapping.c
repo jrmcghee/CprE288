@@ -1,40 +1,49 @@
 #include "Mapping.h";
+#include "globalVariables.h"
 
 #define min(X,Y) ((X) < (Y) ? (X) : (Y))
 #define max(X,Y) ((X) > (Y) ? (X) : (Y))
 
-#define RESOLUTION 8
-#define MARGIN_OF_ERROR 1
-#define ROOM_SIZE 80
-#define FIELD_SIZE 440
-#define MAP_SIDE_LENGTH (FIELD_SIZE / RESOLUTION)
-#define PI 3.14159265
-
-int mapSideLength = MAP_SIDE_LENGTH;
-
 coordinate currentPosition;
-int startingX = -180 + 220;
-int startingY = 0 + 220;
+int startingX = 0 + 220;
+int startingY = 0 + 122;
 
-void initializeMap(){
+int marginOfError;
+int resolution;
+int roomSize;
 
-    map = (char*)malloc(sizeof(char[MAP_SIDE_LENGTH][MAP_SIDE_LENGTH / 2]));
+double angle = 0.0;
+
+int map[MAP_SIDE_LENGTH][MAP_SIDE_LENGTH / 2];
+
+void setField(int mapSide, int errorMargin, int res, int roomWidth, int widthSet, int heightSet){
+    mapSideLength = mapSide;
+    marginOfError = errorMargin;
+    resolution = res;
+    roomSize = roomWidth;
+    width = widthSet;
+    height = heightSet;
+}
+
+void initializeMap(char setmap[width][height]){
+
+    //map = (char*)malloc(sizeof(char[mapSideLength][mapSideLength / 2]));
 
     int i = 0;
     for( i = 0; i < mapSideLength; i++){
         int j = 0;
         for(j = 0; j < mapSideLength; j++){
-            *map[i][j] = UNDISCOVERED;
+            setmap[i][j] = UNDISCOVERED;
         }
     }
 }
 
-void setUpDefaultMap(){
+void setUpDefaultMap(int width, int height){
     int sideLength = mapSideLength;
     int i = 0;
-    for( i = 0; i < mapSideLength; i++){
+    for( i = 0; i < width; i++){
         int j = 0;
-        for(j = 0; j < mapSideLength / 2; j++){
+        for(j = 0; j < height; j++){
             map[i][j] = UNDISCOVERED;
         }
     }
@@ -50,19 +59,25 @@ void setUpDefaultMap(){
 void putAtPosition(coordinate pos, OBSTACLE obj){
     int xIndex = cmToIndex(pos.x);
     int yIndex = cmToIndex(pos.y);
-    int placeMaxX = min(xIndex + MARGIN_OF_ERROR, MAP_SIDE_LENGTH);
-    int placeMinX = max(xIndex - MARGIN_OF_ERROR , 0);
-    int placeMaxY = min(yIndex + MARGIN_OF_ERROR, MAP_SIDE_LENGTH);
-    int placeMinY = max(yIndex - MARGIN_OF_ERROR , 0);
-    int i = placeMinX;
-    for( i = placeMinX; i < placeMaxX; i++){
-        int j = placeMinY;
-        for(j = placeMinY; j < placeMaxY; j++){
-            if( pow((i - RESOLUTION),2) + pow((j - RESOLUTION),2) <= pow(RESOLUTION, 2) ){
-                map[i][j] = obj;
-            }
+    if(marginOfError > 0){
+        int placeMaxX = min(xIndex + marginOfError, mapSideLength);
+        int placeMinX = max(xIndex - marginOfError , 0);
+        int placeMaxY = min(yIndex + marginOfError, mapSideLength / 2);
+        int placeMinY = max(yIndex - marginOfError , 0);
+        int i = placeMinX;
+        for( i = placeMinX; i < placeMaxX; i++){
+            int j = placeMinY;
+            for(j = placeMinY; j < placeMaxY; j++){
+                if( pow((i - xIndex),2) + pow((j - yIndex),2) <= pow(marginOfError, 2) ){
 
+                        map[i][j] = obj;
+
+                }
+
+            }
         }
+    } else {
+        map[xIndex][yIndex] = obj;
     }
 }
 
@@ -89,102 +104,99 @@ void scanNearbyCoords( coordinate pos, int radius, oi_t* io){
 
 }
 
-//void goToPosition(int x, int y, oi_t* io){
-//    int distanceToMove = (x - currentPosition.x) * 10;
-//    if( x < currentPosition.x ){
-//        turn_right( io, 180);
-//        distanceToMove *= -1;
-//    }
-//    move_forward(io, distanceToMove);
-//
-//    int distanceToMove = (x - currentPosition.x) * 10;
-//    if( x < currentPosition.x ){
-//        if( currentPosition.y < y ){
-//            turn_right( io, 180);
-//            distanceToMove *= -1;
-//        } else {
-//
-//        }
-//        turn_right( io, 180);
-//        distanceToMove *= -1;
-//    }
-//    move_forward(io, distanceToMove);
-//}
-double convertADC(unsigned long ir_sensor){
-
-    double result = ir_sensor;
-
-    result = pow(result, -1.176);
-
-    result *= 126106;
-
-    return result;
-}
-
 
 void scanInFront(oi_t * io){
 
-//    oi_setWheels(0,0);
-//
-//    double servoPosition = 0;
-//
-//    servo_move(servoPosition);
-//
-//    int i = 0;
-//
-//    for( i = 0; i < 180; i += 20){
-//
-//        servo_move(i);
-//
-//        double dist = 0;
-//        unsigned long raw_dis = adc_read();
-//        dist = convertADC(raw_dis);
-//        double angle = (90 - i) * PI / 180.0;
-//
-//        if(dist < 60){
-//
-//            int calculatedX = dist * cos(angle);
-//            int calculatedY = dist * sin(angle);
-//
-//            coordinate obstaclePos;
-//            obstaclePos.x = calculatedX;
-//            obstaclePos.y = calculatedY;
-//
-//            putAtPosition( obstaclePos, TALL_OBJ);
-//
-//        }
-//
-//        timer_waitMillis(400);
-//    }
+    oi_setWheels(0,0);
+
+   double servoPosition = 0;
+
+   servo_move(servoPosition);
+
+   int i = 0;
+
+    for( i = 0; i < 180; i += 1){
+
+        servo_move(i);
+
+        double dist = 0;
+        unsigned long raw_dis = adc_read();
+        dist = adc_distance(raw_dis);
+        double angle = (90 - i) * PI / 180.0;
+
+        int calculatedX = currentPosition.x + dist * cos(angle);
+        int calculatedY = currentPosition.y + dist * sin(angle);
+
+            coordinate obstaclePos;
+            obstaclePos.x = calculatedX;
+            obstaclePos.y = calculatedY;
+
+            int j = calculatedX;
+
+            for( j = currentPosition.x; j < calculatedX; j += resolution){
+                coordinate measuringPosition;
+                measuringPosition.x = j;
+                measuringPosition.y = currentPosition.y + (((double)calculatedY - currentPosition.y) / (calculatedX - currentPosition.x)) * (j - currentPosition.x);
+                putAtPosition(measuringPosition, EMPTY);
+            }
+
+            if(dist < 300){
+                putAtPosition( obstaclePos, TALL_OBJ);
+            }
+
+
+            putAtPosition( currentPosition, ROBOT);
+
+            //printMap();
+
+            timer_waitMillis(50);
+    }
 
 }
 
-//Return running map of objects
-void copyMap( char fromMap[mapSideLength][mapSideLength / 2]){
-    int i = 0;
-    for(i = 0; i < mapSideLength; i++){
-        int j = 0;
-        for(j = 0; j < mapSideLength / 2; j++){
-            fromMap[i][j] = ((char)map[i][j]);
-        }
-    }
-    //tempMap
+void changeRobotDirection(double newAngle){
+    angle += newAngle;
 }
 
-// Set pre-defined map
-void setMap(int preSetMap[mapSideLength][mapSideLength / 2]){
-    int i = 0;
-    for(i = 0; i < mapSideLength; i++){
-        int j = 0;
-        for(j = 0; j < mapSideLength / 2; j++){
-            int valAtMap = (OBSTACLE)preSetMap[i][j];
-            map[i][j] = valAtMap;
+void moveRobotOnMap(int distance_mm){
+
+   int calculatedX = currentPosition.x + 10.0 * distance_mm * cos(angle);
+   int calculatedY = currentPosition.y - 10.0 * distance_mm * sin(angle);
+
+   currentPosition.x = calculatedX;
+   currentPosition.y = calculatedY;
+
+}
+
+void shiftMap(MAPSIDE dir){
+
+    if(dir == LEFT){
+        int i = 0;
+        for(i = 0; i < width; i++){
+            int j = 0;
+            for(j = 0; j < height; j++){
+                if(i == width - 1){
+                    map[i][j] = UNDISCOVERED;
+                } else {
+                    map[i][j] = map[max(min(i + 1, width), 0)][max(min(j, height), 0)];
+                }
+            }
         }
     }
+    if(dir == RIGHT){
+        int i = 1;
+        for(i = 1; i < width; i++){
+            int j = 0;
+            for(j = 0; j < height; j++){
+                map[max(min(i - 1, width), 0)][max(min(j, height), 0)] = map[i][j];
+            }
+        }
+    }
+
 }
 
 // List of completed rooms
-coordinate* findRooms(){
+coordinate* findRooms(int width, int height){
 
     coordinate foundRooms[10];
     int idx = 0;
@@ -192,11 +204,11 @@ coordinate* findRooms(){
 
     int i = 0;
 
-    int roomSizeInIndexes = ROOM_SIZE / RESOLUTION;
+    int roomSizeInIndexes = roomSize / resolution;
 
-    for( i = 0; i < mapSideLength; i++){
+    for( i = 0; i < width; i++){
         int j = 0;
-        for(j = 0; j < mapSideLength / 2; j++){
+        for(j = 0; j < height; j++){
             if(map[i][j] == TALL_OBJ){
                 coordinate searchPos;
                 searchPos.x = i;
@@ -229,24 +241,23 @@ coordinate* findRooms(){
 }
 
 // Return list of found rooms, return position of the center of the room
-coordinate* findPotentialRooms(){
+void findPotentialRooms(int width, int height, coordinate foundRooms[10]){
 
-    coordinate foundRooms[10];
     int idx = 0;
 
 
     int i = 0;
 
-    int roomSizeInIndexes = ROOM_SIZE / RESOLUTION;
+    int roomSizeInIndexes = mapSideLength / resolution;
 
-    for( i = 0; i < mapSideLength; i++){
+    for( i = 0; i < width; i++){
         int j = 0;
-        for(j = 0; j < mapSideLength / 2; j++){
+        for(j = 0; j < height / 2; j++){
             if(map[i][j] == TALL_OBJ){
                 coordinate searchPos;
                 searchPos.x = i;
                 searchPos.y = j;
-                int corner = findWichCorner(searchPos, 2 << TALL_OBJ || 2 << UNDISCOVERED);
+                int corner = findWichCorner(searchPos, 2 << TALL_OBJ | 2 << UNDISCOVERED);
 
                 switch(corner){
                     case TOP_RIGHT:
@@ -267,11 +278,12 @@ coordinate* findPotentialRooms(){
                         break;
                 };
 
-                foundRooms[idx++] = searchPos;
+                if(corner != -1)
+                    foundRooms[idx++] = searchPos;
             }
         }
     }
-    
+
 }
 
 coordinate* locationsToScan(){
@@ -280,28 +292,40 @@ coordinate* locationsToScan(){
 
 int findWichCorner(coordinate pos, unsigned int searchCondition){
 
-    int roomSizeInIndexes = ROOM_SIZE / RESOLUTION;
+    int roomSizeInIndexes = roomSize / resolution;
 
     if(((pos.x - roomSizeInIndexes) >= 0) && ((pos.y - roomSizeInIndexes >= 0))){
-        if( (2 << map[pos.x][pos.y] & searchCondition) && (2 << map[pos.x - roomSizeInIndexes][pos.y] & searchCondition) && (2 << map[pos.x][pos.y - roomSizeInIndexes] & searchCondition) && (2 << map[pos.x - roomSizeInIndexes][pos.y - roomSizeInIndexes] & searchCondition) ){
+        if( (2 << map[pos.x][pos.y] & searchCondition) &&
+            (2 << map[pos.x - roomSizeInIndexes][pos.y] & searchCondition) &&
+            (2 << map[pos.x][pos.y - roomSizeInIndexes] & searchCondition) &&
+            (2 << map[pos.x - roomSizeInIndexes][pos.y - roomSizeInIndexes] & searchCondition) ){
             return TOP_RIGHT; // Found room, passed in position was top-right
         }
     }
 
     if(((pos.x - roomSizeInIndexes) >= 0) && ((pos.y + roomSizeInIndexes < mapSideLength))){
-        if( (2 << map[pos.x][pos.y] & searchCondition) && (2 << map[pos.x - roomSizeInIndexes][pos.y] & searchCondition) && (2 << map[pos.x][pos.y + roomSizeInIndexes] & searchCondition) && (2 << map[pos.x - roomSizeInIndexes][pos.y + roomSizeInIndexes] & searchCondition) ){
+        if( (2 << map[pos.x][pos.y] & searchCondition) &&
+            (2 << map[pos.x - roomSizeInIndexes][pos.y] & searchCondition) &&
+            (2 << map[pos.x][pos.y + roomSizeInIndexes] & searchCondition) &&
+            (2 << map[pos.x - roomSizeInIndexes][pos.y + roomSizeInIndexes] & searchCondition) ){
             return BOTTOM_RIGHT; // Found room, passed in position was bottom-right
         }
     }
 
     if(((pos.x + roomSizeInIndexes) >= 0) && ((pos.y - roomSizeInIndexes >= 0))){
-        if( (2 << map[pos.x][pos.y] & searchCondition) && (2 << map[pos.x + roomSizeInIndexes][pos.y] & searchCondition) && (2 << map[pos.x][pos.y - roomSizeInIndexes] & searchCondition) && (2 << map[pos.x + roomSizeInIndexes][pos.y - roomSizeInIndexes] & searchCondition) ){
+        if( (2 << map[pos.x][pos.y] & searchCondition) &&
+            (2 << map[pos.x + roomSizeInIndexes][pos.y] & searchCondition) &&
+            (2 << map[pos.x][pos.y - roomSizeInIndexes] & searchCondition) &&
+            (2 << map[pos.x + roomSizeInIndexes][pos.y - roomSizeInIndexes] & searchCondition) ){
             return TOP_LEFT; // Found room, passed in position was top-left
         }
     }
 
     if(((pos.x + roomSizeInIndexes) >= 0) && ((pos.y + roomSizeInIndexes < mapSideLength))){
-        if( (2 << map[pos.x][pos.y] & searchCondition) && (2 << map[pos.x + roomSizeInIndexes][pos.y] & searchCondition) && (2 << map[pos.x][pos.y + roomSizeInIndexes] & searchCondition) && (2 << map[pos.x + roomSizeInIndexes][pos.y + roomSizeInIndexes] & searchCondition) ){
+        if( (2 << map[pos.x][pos.y] & searchCondition) &&
+            (2 << map[pos.x + roomSizeInIndexes][pos.y] & searchCondition) &&
+            (2 << map[pos.x][pos.y + roomSizeInIndexes] & searchCondition) &&
+            (2 << map[pos.x + roomSizeInIndexes][pos.y + roomSizeInIndexes] & searchCondition) ){
             return BOTTOM_LEFT; // Found room, passed in position was bottom-left
         }
     }
@@ -310,13 +334,13 @@ int findWichCorner(coordinate pos, unsigned int searchCondition){
 }
 
 int cmToIndex(int num){
-    return num / RESOLUTION;
+    return num / resolution;
 }
-
-int indexToCM(int num){
-    return num * RESOLUTION;
-}
-
-int getMapSideLength(){
-    return getMapSideLength;
-}
+//
+//int indexToCM(int num){
+//    return num * resolution;
+//}
+//
+//int getMapSideLength(){
+//    return getMapSideLength;
+//}

@@ -7,11 +7,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include "movement.h"
+#include "scan.h"
 #include "open_interface.h"
-
-#define RESOLUTION 8
-#define FIELD_SIZE 440
-#define MAP_SIDE_LENGTH (FIELD_SIZE / RESOLUTION)
 
 typedef struct coordinate {
     int x;
@@ -19,7 +16,7 @@ typedef struct coordinate {
 } coordinate;
 
 typedef enum OBSTACLE {
-    UNDISCOVERED, 
+    UNDISCOVERED = 1,
     EMPTY, 
     TALL_OBJ, 
     SHORT_OBJ, 
@@ -35,34 +32,47 @@ typedef enum ROOMCORNER {
     BOTTOM_LEFT
 } ROOMCORNER;
 
-volatile char* map;
+typedef enum MAPSIDE {
+    TOP,
+    LEFT,
+    RIGHT,
+    BOTTOM
+} MAPSIDE;
+
+void setField(int mapSide, int errorMargin, int res, int roomWidth, int widthSet, int heightSet);
+
+//void initializeMap(char setmap[width][height]);
+
+void setUpDefaultMap(int width, int height);
 
 
-// Initialize map
-void initializeMap();
-
-// Put Object at (x,y) coord
 void putAtPosition(coordinate pos, OBSTACLE obj);
 
-// Scan and put nearby object into map
-void scanNearbyCoords( coordinate pos, int radius, oi_t* io );
+void scanNearby( int x, int y, int radius, oi_t* io);
+
 
 // Scan and put nearby object into map
-void scanNearby( int x, int y, int radius, oi_t* io );
+void scanNearbyCoords( coordinate pos, int radius, oi_t* io);
 
-//Return running map of objects
-int** getMap();
+void scanInFront(oi_t * io);
 
-// Set pre-defined map
-void setMap( int preSetMap[][] );
+void changeRobotDirection(double newAngle);
+
+void moveRobotOnMap(int distance_mm);
+
+// List of completed rooms
+coordinate* findRooms(int width, int height);
 
 // Return list of found rooms, return position of the center of the room
-coordinate* findRooms();
+void findPotentialRooms(int width, int height, coordinate foundRooms[10]);
+
+coordinate* locationsToScan();
+
+int findWichCorner(coordinate pos, unsigned int searchCondition);
 
 int cmToIndex(int num);
 
-int getMapSideLength();
-
+void shiftMap(MAPSIDE dir);
 
 
 #endif /* MAPPING_H_ */
